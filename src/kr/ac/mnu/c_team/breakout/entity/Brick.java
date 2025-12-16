@@ -1,25 +1,24 @@
 package kr.ac.mnu.c_team.breakout.entity;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.GradientPaint;
 import java.awt.Graphics2D;
 
-// 추상 클래스 (abstract)여야 합니다.
 public abstract class Brick extends GameObject {
     
-    public int hp;          // 내구도
-    public int scoreValue;  // 점수
-    public Color color;     // 색상
-    public boolean isDestroyed = false; // 파괴 여부
+    public int hp;
+    public int scoreValue;
+    public Color color;
+    public boolean isDestroyed = false;
 
-    // ★ 이 생성자가 있어야 NormalBrick에서 에러가 안 납니다!
     public Brick(double x, double y, double width, double height, int hp, Color color) {
-        super(x, y, width, height); // GameObject의 생성자 호출
+        super(x, y, width, height);
         this.hp = hp;
         this.color = color;
         this.scoreValue = 100 * hp;
     }
 
-    // 공에 맞았을 때 로직
     public void hit() {
         hp--;
         if (hp <= 0) {
@@ -28,17 +27,36 @@ public abstract class Brick extends GameObject {
     }
 
     @Override
-    public void update() {
-        // 움직이지 않으므로 비워둠
-    }
+    public void update() { }
 
     @Override
     public void draw(Graphics2D g) {
         if (!isDestroyed) {
-            g.setColor(color);
-            g.fillRect((int)position.x, (int)position.y, (int)width, (int)height);
+            int x = (int)position.x;
+            int y = (int)position.y;
+            int w = (int)width;
+            int h = (int)height;
+            
+            // 1. 기본 그라데이션 채우기 (위에서 아래로 어두워짐 -> 둥근 입체감)
+            GradientPaint gp = new GradientPaint(x, y, color.brighter(), x, y + h, color.darker());
+            g.setPaint(gp);
+            g.fillRect(x, y, w, h);
+            
+            // 2. 3D 하이라이트 효과 (왼쪽/위쪽은 밝게, 오른쪽/아래쪽은 어둡게)
+            // 밝은 테두리 (빛 받는 부분)
+            g.setColor(new Color(255, 255, 255, 100)); // 반투명 흰색
+            g.fillRect(x, y, w, 4); // 윗면
+            g.fillRect(x, y, 4, h); // 왼쪽면
+            
+            // 어두운 그림자 (그림자 지는 부분)
+            g.setColor(new Color(0, 0, 0, 80)); // 반투명 검은색
+            g.fillRect(x + w - 4, y, 4, h); // 오른쪽면
+            g.fillRect(x, y + h - 4, w, 4); // 아랫면
+            
+            // 3. 외곽선 (깔끔하게 마무리)
             g.setColor(Color.BLACK);
-            g.drawRect((int)position.x, (int)position.y, (int)width, (int)height);
+            g.setStroke(new BasicStroke(1)); // 얇은 선
+            g.drawRect(x, y, w, h);
         }
     }
 }

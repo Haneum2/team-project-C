@@ -6,14 +6,15 @@ import java.awt.event.KeyListener;
 public class InputManager implements KeyListener {
     private boolean[] keys = new boolean[256];
     
-    // 엔터키 추가 (재시작용)
-    public boolean left, right, space, enter;
+    // escape(ESC) 키 추가
+    public boolean left, right, space, enter, escape;
 
     public void update() {
         left = keys[KeyEvent.VK_LEFT];
         right = keys[KeyEvent.VK_RIGHT];
         space = keys[KeyEvent.VK_SPACE];
-        enter = keys[KeyEvent.VK_ENTER]; // 엔터키 감지
+        enter = keys[KeyEvent.VK_ENTER];
+        escape = keys[KeyEvent.VK_ESCAPE]; // ESC 키 연결
     }
 
     @Override
