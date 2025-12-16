@@ -1,0 +1,35 @@
+package kr.ac.mnu.c_team.breakout.manager;
+
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+
+public class InputManager implements KeyListener {
+    private boolean[] keys = new boolean[256];
+    
+    // 엔터키 추가 (재시작용)
+    public boolean left, right, space, enter;
+
+    public void update() {
+        left = keys[KeyEvent.VK_LEFT];
+        right = keys[KeyEvent.VK_RIGHT];
+        space = keys[KeyEvent.VK_SPACE];
+        enter = keys[KeyEvent.VK_ENTER]; // 엔터키 감지
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if(e.getKeyCode() < keys.length) {
+            keys[e.getKeyCode()] = true;
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if(e.getKeyCode() < keys.length) {
+            keys[e.getKeyCode()] = false;
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) { }
+}

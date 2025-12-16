@@ -123,7 +123,8 @@ public final class CollisionDetector {
         if (ball == null || bricks == null) return;
 
         for (Brick brick : bricks) {
-            if (brick == null || !brick.isActive()) continue;
+            // [수정] 정의되지 않은 isActive() 대신, public 필드인 isDestroyed를 사용합니다.
+            if (brick == null || brick.isDestroyed) continue; // <--- 이 줄을 수정합니다.
 
             if (isColliding(ball, brick)) {
                 resolveBallVsRect(ball, brick);
