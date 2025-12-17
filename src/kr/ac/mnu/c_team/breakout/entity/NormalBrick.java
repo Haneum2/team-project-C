@@ -8,7 +8,6 @@ public class NormalBrick extends Brick {
         super(x, y, width, height, 1, Color.YELLOW); // 내구도 1, 노란색
     }
 
-    // [수정] GameObject/Collidable에서 상속된 onCollision 메서드를 구현합니다.
     @Override
     public void onCollision(Collidable other) {
         // 벽돌의 충돌 로직(hp 감소)은 GamePanel.update()에서 처리하고 있습니다.

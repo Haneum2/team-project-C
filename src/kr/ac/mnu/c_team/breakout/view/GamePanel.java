@@ -7,21 +7,25 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.awt.Rectangle;
 import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
+import kr.ac.mnu.c_team.breakout.engine.CollisionDetector;
 import kr.ac.mnu.c_team.breakout.entity.Ball;
 import kr.ac.mnu.c_team.breakout.entity.Brick;
 import kr.ac.mnu.c_team.breakout.entity.Paddle;
+import kr.ac.mnu.c_team.breakout.entity.ExplosiveBrick;
 import kr.ac.mnu.c_team.breakout.manager.EffectManager;
 import kr.ac.mnu.c_team.breakout.manager.InputManager;
 import kr.ac.mnu.c_team.breakout.manager.MapGenerator;
 import kr.ac.mnu.c_team.breakout.manager.MouseHandler;
 import kr.ac.mnu.c_team.breakout.manager.PowerUpManager;
 import kr.ac.mnu.c_team.breakout.manager.ScoreManager;
+
 
 public class GamePanel extends JPanel implements Runnable {
     
@@ -146,7 +150,9 @@ public class GamePanel extends JPanel implements Runnable {
     private void applyCustomColors() {
         Color targetBrickColor = colorList[brickColorIndex];
         for (Brick b : mapGenerator.bricks) {
-            b.color = targetBrickColor;
+            if (b instanceof kr.ac.mnu.c_team.breakout.entity.NormalBrick) {
+            	b.color = targetBrickColor;
+            }
         }
     }
     
@@ -257,24 +263,43 @@ public class GamePanel extends JPanel implements Runnable {
         ball.update();
         powerUpManager.update(this, paddle);
         
-        if (paddle.getBounds().intersects(ball.getBounds())) {
-            ball.onCollision(paddle);
-            startShake(5);
+        if (CollisionDetector.isColliding(ball, paddle)) {
+            
+            // 1. 패들 전용 충돌 처리
+            CollisionDetector.handlePaddleCollision(ball, paddle);
+            // 2. 이펙트 (공이 튕겨 나갔을 때만 흔들기)
+            if (ball.getVelocity().y < 0) { 
+                startShake(5);
+            }
         }
         
         for (Brick brick : mapGenerator.bricks) {
             if (!brick.isDestroyed) {
+                // 충돌 감지 (CollisionDetector 사용 권장)
                 if (ball.getBounds().intersects(brick.getBounds())) {
+                    
+                    // 1. 물리 반사 (앞서 적용한 코드)
+                    kr.ac.mnu.c_team.breakout.engine.CollisionDetector.resolveBallVsRect(ball, brick);
+
+                    // 2. 벽돌 타격
                     brick.hit();
-                    ball.onCollision(brick);
                     score += brick.scoreValue;
                     
+                    // 3. ★ 폭발 벽돌인지 확인 후 폭발 실행
+                    if (brick instanceof kr.ac.mnu.c_team.breakout.entity.ExplosiveBrick) {
+                        triggerExplosion(brick);
+                    }
+
+                    // 4. 이펙트 생성
                     double cx = brick.getPosition().x + brick.getWidth()/2;
                     double cy = brick.getPosition().y + brick.getHeight()/2;
-                    
                     effectManager.createExplosion(cx, cy, brick.color);
                     powerUpManager.maybeSpawn(cx, cy);
-                    startShake(10);
+                    
+                    if (!(brick instanceof kr.ac.mnu.c_team.breakout.entity.ExplosiveBrick)) {
+                         startShake(5); // 일반 벽돌은 살짝만 흔들림
+                    }
+                    
                     break;
                 }
             }
@@ -539,5 +564,37 @@ public class GamePanel extends JPanel implements Runnable {
             g.drawImage(dbImage, 0, 0, null);
             g.dispose();
         }
+    }
+    
+    private void triggerExplosion(Brick centerBrick) {
+        // 1. 폭발 범위 설정 (자신을 중심으로 3x3 크기 영역)
+        int exX = (int) (centerBrick.getPosition().x - centerBrick.getWidth());
+        int exY = (int) (centerBrick.getPosition().y - centerBrick.getHeight());
+        int exW = (int) (centerBrick.getWidth() * 3);
+        int exH = (int) (centerBrick.getHeight() * 3);
+        
+        Rectangle explosionArea = new Rectangle(exX, exY, exW, exH);
+
+        // 2. 모든 벽돌을 검사하여 범위 안에 있으면 데미지 입힘
+        for (Brick b : mapGenerator.bricks) {
+            if (!b.isDestroyed && b != centerBrick) {
+                if (explosionArea.intersects(b.getBounds())) {
+                    b.hit(); // 주변 벽돌 데미지
+                    
+                    // 주변 벽돌도 깨지는 효과 연출
+                    if (b.isDestroyed) {
+                        score += b.scoreValue;
+                        effectManager.createExplosion(
+                            b.getPosition().x + b.getWidth()/2, 
+                            b.getPosition().y + b.getHeight()/2, 
+                            b.color
+                        );
+                    }
+                }
+            }
+        }
+        
+        // 3. 화면을 강하게 흔들어 폭발 느낌 강조
+        startShake(20); 
     }
 }
